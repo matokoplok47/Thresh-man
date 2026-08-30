@@ -3,17 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0d0c0c">
+<meta name="theme-color" content="#100d0f">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Texture Forge">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%230d0c0c'/%3E%3Cg fill='%23fff'%3E%3Ccircle cx='16' cy='18' r='3'/%3E%3Ccircle cx='44' cy='13' r='2'/%3E%3Ccircle cx='30' cy='34' r='4'/%3E%3Ccircle cx='50' cy='45' r='3'/%3E%3Ccircle cx='14' cy='48' r='2'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23100d0f'/%3E%3Cg fill='%23fff'%3E%3Ccircle cx='16' cy='18' r='3'/%3E%3Ccircle cx='44' cy='13' r='2'/%3E%3Ccircle cx='30' cy='34' r='4'/%3E%3Ccircle cx='50' cy='45' r='3'/%3E%3Ccircle cx='14' cy='48' r='2'/%3E%3C/g%3E%3C/svg%3E">
 <title>Texture Forge</title>
 <style>
 :root{
-  --ink:#0d0c0c; --panel:#161414; --panel-2:#1e1b1b; --line:#2e2a2a;
-  --dust:#e8e2da; --dim:#8d8783; --mark:#c8202f;
+  --ink:#100d0f; --panel:#1a1517; --panel-2:#241d20; --line:#372d31;
+  --dust:#f2e8e5; --dim:#a08e8c; --mark:#ff8a73; --mark-hi:#ffa392; --on-mark:#1a1012;
   --mono: ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
   --disp: "Helvetica Neue","Arial Narrow",Inter,system-ui,sans-serif;
   --safe: env(safe-area-inset-bottom, 0px);
@@ -64,11 +64,11 @@ body.dragging::after{content:"";position:fixed;inset:8px;border:2px dashed var(-
 
 /* viewer */
 .viewer{
-  height:clamp(130px,24vh,230px);position:relative;display:flex;align-items:center;justify-content:center;
-  background:repeating-conic-gradient(#141212 0% 25%,#191616 0% 50%) 50%/16px 16px;padding:10px;
+  height:clamp(130px,24vh,230px);position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;
+  background:repeating-conic-gradient(#171214 0% 25%,#1d1719 0% 50%) 50%/16px 16px;padding:10px;
 }
-.frame{position:relative;max-width:100%;max-height:100%;line-height:0;box-shadow:0 0 0 1px var(--line)}
-.frame canvas{display:block;max-width:100%;max-height:100%;width:auto;height:auto}
+.frame{position:relative;line-height:0;box-shadow:0 0 0 1px var(--line);overflow:hidden}
+.frame canvas{display:block;width:100%;height:100%}
 #raw{position:absolute;inset:0;width:100%;height:100%;clip-path:inset(0 calc(100% - var(--wipe,0%)) 0 0)}
 .wipebar{position:absolute;top:0;bottom:0;left:var(--wipe,0%);width:1px;background:var(--mark);pointer-events:none;opacity:var(--wipeop,0)}
 .wipebar::after{content:"ORIGINAL";position:absolute;top:6px;right:6px;font-size:9px;letter-spacing:.1em;color:var(--mark);white-space:nowrap}
@@ -113,21 +113,21 @@ body.dragging::after{content:"";position:fixed;inset:8px;border:2px dashed var(-
 input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:30px;background:none;margin:0;cursor:pointer;touch-action:none}
 input[type=range]::-webkit-slider-runnable-track{height:2px;background:var(--line)}
 input[type=range]::-moz-range-track{height:2px;background:var(--line)}
-input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;background:var(--dust);margin-top:-7px;border:0;border-radius:0}
-input[type=range]::-moz-range-thumb{width:16px;height:16px;background:var(--dust);border:0;border-radius:0}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;background:var(--mark);margin-top:-7px;border:0;border-radius:0}
+input[type=range]::-moz-range-thumb{width:16px;height:16px;background:var(--mark);border:0;border-radius:0}
 select,input[type=number]{width:100%;background:var(--panel-2);border:1px solid var(--line);padding:9px 8px;border-radius:0;appearance:none}
 .seg{display:flex;border:1px solid var(--line)}
 .seg button{flex:1;background:none;border:0;padding:9px 4px;color:var(--dim);cursor:pointer;font-size:11px;white-space:nowrap}
 .seg button+button{border-left:1px solid var(--line)}
-.seg button.on{background:var(--mark);color:#fff}
+.seg button.on{background:var(--mark);color:var(--on-mark);font-weight:700}
 .chk{display:flex;align-items:center;gap:9px;cursor:pointer;padding:9px 0;font-size:11px}
 .chk input{accent-color:var(--mark);width:16px;height:16px}
 .presets{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .presets button{background:var(--panel-2);border:1px solid var(--line);padding:14px 6px;cursor:pointer;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim)}
-.presets button:active{border-color:var(--mark);color:var(--dust)}
+.presets button:active{border-color:var(--mark);color:var(--mark)}
 .note{color:var(--dim);font-size:10px;line-height:1.6;margin:10px 0 0}
 .fullbtn{width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--dust);padding:13px 8px;margin-top:6px;cursor:pointer;font-size:11px;letter-spacing:.08em;text-transform:uppercase}
-.fullbtn.primary{background:var(--mark);border-color:var(--mark);color:#fff;font-weight:700;margin-top:14px}
+.fullbtn.primary{background:var(--mark);border-color:var(--mark);color:var(--on-mark);font-weight:700;margin-top:14px}
 .fullbtn:disabled{opacity:.55}
 #clipout{margin-top:14px;border:1px solid var(--line);padding:10px;background:var(--panel-2)}
 #clipmedia img,#clipmedia video{width:100%;display:block;background:#000}
@@ -142,12 +142,13 @@ h4:first-child{margin-top:0}
 }
 .actions button{
   flex:1;border:0;padding:14px 8px;cursor:pointer;font-size:11px;letter-spacing:.08em;
-  text-transform:uppercase;font-weight:700;background:var(--mark);color:#fff;
+  text-transform:uppercase;font-weight:700;background:var(--mark);color:var(--on-mark);
 }
+.actions button:active{background:var(--mark-hi)}
 .actions button.ghost{background:none;border:1px solid var(--line);color:var(--dim);font-weight:400}
 .actions button:disabled{opacity:.5}
 
-#err{position:fixed;left:0;right:0;bottom:0;z-index:200;background:var(--mark);color:#fff;padding:11px 40px calc(11px + var(--safe)) 14px;font-size:11px;line-height:1.5;display:none;word-break:break-word}
+#err{position:fixed;left:0;right:0;bottom:0;z-index:200;background:var(--mark);color:var(--on-mark);padding:11px 40px calc(11px + var(--safe)) 14px;font-size:11px;line-height:1.5;display:none;word-break:break-word}
 #err b{display:block;font-size:9px;letter-spacing:.12em;text-transform:uppercase;opacity:.75;margin-bottom:3px}
 #err i{font-style:normal}
 #err span{position:absolute;top:8px;right:12px;font-size:18px;cursor:pointer}
@@ -182,7 +183,7 @@ h4:first-child{margin-top:0}
         <div class="glyph"></div>
         <h2>Add photos</h2>
         <p>Asphalt, potholes, bark, branches. Turns them into black and white grain masks at your output resolution. Everything runs locally, nothing is uploaded.</p>
-        <button class="wide" id="pick" style="background:var(--mark);border:0;color:#fff;padding:14px 26px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:11px;cursor:pointer">Choose photos</button>
+        <button class="wide" id="pick" style="background:var(--mark);border:0;color:var(--on-mark);padding:14px 26px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:11px;cursor:pointer">Choose photos</button>
       </div>
 
       <div class="top" id="top">
@@ -269,13 +270,19 @@ h4:first-child{margin-top:0}
 
         <div class="pane" data-p="v">
           <div class="row">
-            <div class="lab"><b>Resolution</b></div>
+            <div class="lab"><b>Orientation</b></div>
+            <div class="seg" id="orient">
+              <button data-v="land" class="on">Landscape</button>
+              <button data-v="port">Portrait</button>
+              <button data-v="square">Square</button>
+            </div>
+          </div>
+          <div class="row">
+            <div class="lab"><b>Resolution</b><span id="ressize"></span></div>
             <select id="res">
               <option value="1920x1080">1920 × 1080</option>
               <option value="2560x1440">2560 × 1440</option>
               <option value="3840x2160">3840 × 2160</option>
-              <option value="1080x1920">1080 × 1920 (portrait)</option>
-              <option value="1920x1920">1920 × 1920 (square)</option>
               <option value="orig">Match photo</option>
               <option value="custom">Custom…</option>
             </select>
@@ -350,17 +357,29 @@ h4:first-child{margin-top:0}
 "use strict";
 
 const D={channel:"luma",blur:1,detail:0,black:40,white:85,gamma:100,thr:50,soft:8,
-  invert:false,warp:14,wscale:26,wseed:7,res:"1920x1080",cw:1920,ch:1080,fit:"cover",alpha:true,mirror:"none",rgbinv:"none"};
+  invert:false,warp:14,wscale:26,wseed:7,res:"1920x1080",cw:1920,ch:1080,fit:"cover",alpha:true,mirror:"none",rgbinv:"none",orient:"land"};
 
 const CLIP={fps:24,dur:4,hold:1,shuffle:false,fmt:"gif",rndinv:false};
 
 const PRESETS={
-  "Asphalt":       {channel:"luma",blur:1,  detail:0, black:40,white:85,gamma:100,thr:52,soft:6, warp:12,wscale:26},
-  "Concrete":{channel:"max", blur:1.5,detail:10,black:30,white:72,gamma:110,thr:50,soft:10,warp:18,wscale:34},
-  "Trees":       {channel:"min", blur:0.5,detail:0, black:20,white:65,gamma:90, thr:44,soft:4, warp:8, wscale:18},
-  "Fine dust":  {channel:"luma",blur:2.5,detail:0, black:55,white:92,gamma:120,thr:70,soft:14,warp:22,wscale:40},
-  "Hard contrast":{channel:"luma",blur:0, detail:25,black:38,white:70,gamma:100,thr:50,soft:0, warp:0, wscale:26},
-  "Grain":  {channel:"luma",blur:0,  detail:60,black:30,white:70,gamma:100,thr:50,soft:2, warp:34,wscale:9}
+  "Asphalt":      {channel:"luma",blur:1,  detail:0, black:40,white:85,gamma:100,thr:52,soft:6, warp:12,wscale:26,invert:false,mirror:"none",rgbinv:"none"},
+  "Concrete":     {channel:"max", blur:1.5,detail:10,black:30,white:72,gamma:110,thr:50,soft:10,warp:18,wscale:34,invert:false,mirror:"none",rgbinv:"none"},
+  "Cracks":       {channel:"luma",blur:0,  detail:55,black:35,white:70,gamma:100,thr:46,soft:3, warp:6, wscale:14,invert:true, mirror:"none",rgbinv:"none"},
+  "Bark":         {channel:"min", blur:0.5,detail:35,black:25,white:75,gamma:95, thr:48,soft:5, warp:10,wscale:22,invert:false,mirror:"none",rgbinv:"none"},
+  "Trees":        {channel:"min", blur:0.5,detail:0, black:20,white:65,gamma:90, thr:44,soft:4, warp:8, wscale:18,invert:false,mirror:"none",rgbinv:"none"},
+  "Leaves":       {channel:"luma",blur:0.5,detail:20,black:30,white:80,gamma:100,thr:55,soft:6, warp:10,wscale:20,invert:true, mirror:"none",rgbinv:"none"},
+  "Gravel":       {channel:"max", blur:1,  detail:20,black:45,white:88,gamma:105,thr:58,soft:5, warp:14,wscale:24,invert:false,mirror:"none",rgbinv:"none"},
+  "Fine dust":    {channel:"luma",blur:2.5,detail:0, black:55,white:92,gamma:120,thr:70,soft:14,warp:22,wscale:40,invert:false,mirror:"none",rgbinv:"none"},
+  "Snow":         {channel:"luma",blur:1.5,detail:0, black:60,white:95,gamma:130,thr:78,soft:10,warp:16,wscale:30,invert:false,mirror:"none",rgbinv:"none"},
+  "Hard contrast":{channel:"luma",blur:0,  detail:25,black:38,white:70,gamma:100,thr:50,soft:0, warp:0, wscale:26,invert:false,mirror:"none",rgbinv:"none"},
+  "Grain":        {channel:"luma",blur:0,  detail:60,black:30,white:70,gamma:100,thr:50,soft:2, warp:34,wscale:9, invert:false,mirror:"none",rgbinv:"none"},
+  "Static":       {channel:"luma",blur:0,  detail:85,black:40,white:60,gamma:100,thr:50,soft:1, warp:60,wscale:5, invert:false,mirror:"none",rgbinv:"none"},
+  "Liquid":       {channel:"luma",blur:4,  detail:0, black:35,white:80,gamma:110,thr:50,soft:20,warp:70,wscale:70,invert:false,mirror:"none",rgbinv:"none"},
+  "Ink blot":     {channel:"luma",blur:6,  detail:0, black:30,white:75,gamma:140,thr:58,soft:25,warp:40,wscale:55,invert:false,mirror:"none",rgbinv:"none"},
+  "Kaleido":      {channel:"luma",blur:1,  detail:10,black:38,white:82,gamma:100,thr:52,soft:8, warp:20,wscale:30,invert:false,mirror:"quad",rgbinv:"none"},
+  "Negative":     {channel:"luma",blur:1,  detail:0, black:40,white:85,gamma:100,thr:52,soft:6, warp:10,wscale:26,invert:true, mirror:"none",rgbinv:"none"},
+  "X-ray":        {channel:"luma",blur:1,  detail:15,black:35,white:80,gamma:100,thr:50,soft:6, warp:8, wscale:20,invert:false,mirror:"none",rgbinv:"rgb"},
+  "Sparse":       {channel:"luma",blur:2,  detail:0, black:62,white:97,gamma:115,thr:82,soft:6, warp:18,wscale:36,invert:false,mirror:"none",rgbinv:"none"}
 };
 
 let items=[], cur=-1, queued=false, scope="one";
@@ -449,9 +468,15 @@ function copyCanvas(src){
   return c;
 }
 function outSize(it,s){
-  if(s.res==="orig") return [it.w,it.h];
-  if(s.res==="custom") return [clamp(s.cw|0,16,8192),clamp(s.ch|0,16,8192)];
-  const p=s.res.split("x"); return [+p[0],+p[1]];
+  let W,H;
+  if(s.res==="orig"){ W=it.w; H=it.h; }
+  else if(s.res==="custom"){ W=clamp(s.cw|0,16,8192); H=clamp(s.ch|0,16,8192); }
+  else { const p=s.res.split("x"); W=+p[0]; H=+p[1]; }
+  const o=s.orient||"land";
+  if(o==="square"){ const m=Math.max(W,H); W=m; H=m; }
+  else if(o==="port"&&W>H){ const t=W; W=H; H=t; }
+  else if(o==="land"&&H>W){ const t=W; W=H; H=t; }
+  return [W,H];
 }
 
 function render(it,s,W,H){
@@ -584,6 +609,9 @@ function syncPanel(){
   document.querySelectorAll("#fit button").forEach(b=>b.classList.toggle("on",b.dataset.v===s.fit));
   document.querySelectorAll("#mirror button").forEach(b=>b.classList.toggle("on",b.dataset.v===(s.mirror||"none")));
   document.querySelectorAll("#rgbinv button").forEach(b=>b.classList.toggle("on",b.dataset.v===(s.rgbinv||"none")));
+  document.querySelectorAll("#orient button").forEach(b=>b.classList.toggle("on",b.dataset.v===(s.orient||"land")));
+  const os=outSize(items[cur],s);
+  $("#ressize").textContent=os[0]+"×"+os[1];
 }
 
 let interactive=false, idleT=0;
@@ -601,6 +629,19 @@ function preview(){
   if(cur<0||!items[cur]||items[cur].bad) return;
   try{ drawPreview(); }catch(e){ fail("render: "+e.message); }
 }
+let lastPW=0,lastPH=0;
+function fitFrame(pw,ph){
+  lastPW=pw; lastPH=ph;
+  const v=$("#viewer"), f=$("#frame");
+  if(!v||v.hidden) return;
+  const cs=getComputedStyle(v);
+  const vw=v.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight);
+  const vh=v.clientHeight-parseFloat(cs.paddingTop)-parseFloat(cs.paddingBottom);
+  if(!(vw>0&&vh>0)) return;
+  const k=Math.min(vw/pw,vh/ph);
+  f.style.width=Math.max(2,Math.round(pw*k))+"px";
+  f.style.height=Math.max(2,Math.round(ph*k))+"px";
+}
 function drawPreview(){
   const it=items[cur], s=it.s;
   const [W,H]=outSize(it,s);
@@ -612,6 +653,7 @@ function drawPreview(){
   out.getContext("2d").drawImage(c,0,0);
   const raw=$("#raw"); raw.width=pw; raw.height=ph;
   drawFit(raw.getContext("2d"),it.img,pw,ph,s.fit);
+  fitFrame(pw,ph);
   $("#badge").textContent=`${cur+1}/${items.length} · ${it.name} · ${W}×${H}`;
 }
 function refreshThumbs(){
@@ -1108,7 +1150,7 @@ document.querySelectorAll(".row[data-k] input").forEach(inp=>{
 $("#channel").onchange=e=>{ if(cur<0)return; setParam("channel",e.target.value); schedule(); };
 $("#invert").onchange=e=>{ if(cur<0)return; setParam("invert",e.target.checked); schedule(); };
 $("#alpha").onchange=e=>{ if(cur<0)return; setParam("alpha",e.target.checked); schedule(); };
-$("#res").onchange=e=>{ if(cur<0)return; setParam("res",e.target.value); $("#customres").hidden=e.target.value!=="custom"; schedule(); };
+$("#res").onchange=e=>{ if(cur<0)return; setParam("res",e.target.value); $("#customres").hidden=e.target.value!=="custom"; syncPanel(); schedule(); };
 $("#cw").oninput=e=>{ if(cur<0)return; setParam("cw",+e.target.value); schedule(true); };
 $("#ch").oninput=e=>{ if(cur<0)return; setParam("ch",+e.target.value); schedule(true); };
 document.querySelectorAll("#fit button").forEach(b=>b.onclick=()=>{
@@ -1131,6 +1173,12 @@ $("#rndinv").onchange=e=>{ CLIP.rndinv=e.target.checked; };
 document.querySelectorAll("#clipfmt button").forEach(b=>b.onclick=()=>{
   CLIP.fmt=b.dataset.v;
   document.querySelectorAll("#clipfmt button").forEach(x=>x.classList.toggle("on",x===b));
+});
+document.querySelectorAll("#orient button").forEach(b=>b.onclick=()=>{
+  if(cur<0) return;
+  setParam("orient",b.dataset.v);
+  document.querySelectorAll("#orient button").forEach(x=>x.classList.toggle("on",x===b));
+  syncPanel(); schedule(); updateClipInfo();
 });
 document.querySelectorAll("#rgbinv button").forEach(b=>b.onclick=()=>{
   if(cur<0) return;
@@ -1203,6 +1251,10 @@ $("#dlAll").onclick=async()=>{
   grab.addEventListener("pointercancel",()=>{on=false;});
   grab.addEventListener("dblclick",()=>{frame.style.setProperty("--wipe","0%");frame.style.setProperty("--wipeop",0);});
 })();
+
+let rsT=0;
+addEventListener("resize",()=>{ clearTimeout(rsT); rsT=setTimeout(()=>{ if(lastPW) fitFrame(lastPW,lastPH); },120); });
+addEventListener("orientationchange",()=>{ setTimeout(()=>{ if(lastPW) fitFrame(lastPW,lastPH); },300); });
 
 document.addEventListener("keydown",e=>{
   if(e.target.tagName==="INPUT"||e.target.tagName==="SELECT") return;
