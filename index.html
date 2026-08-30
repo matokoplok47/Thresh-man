@@ -97,8 +97,8 @@ body.dragging::after{content:"";position:fixed;inset:8px;border:2px dashed var(-
 /* tabs */
 .tabs{flex:0 0 auto;display:flex;border-bottom:1px solid var(--line);background:var(--panel)}
 .tabs button{
-  flex:1;background:none;border:0;border-bottom:2px solid transparent;padding:11px 2px;
-  color:var(--dim);font-size:10px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;
+  flex:1;background:none;border:0;border-bottom:2px solid transparent;padding:11px 1px;
+  color:var(--dim);font-size:9px;letter-spacing:.02em;text-transform:uppercase;cursor:pointer;
 }
 .tabs button.on{color:var(--dust);border-bottom-color:var(--mark)}
 
@@ -129,6 +129,9 @@ select,input[type=number]{width:100%;background:var(--panel-2);border:1px solid 
 .fullbtn{width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--dust);padding:13px 8px;margin-top:6px;cursor:pointer;font-size:11px;letter-spacing:.08em;text-transform:uppercase}
 .fullbtn.primary{background:var(--mark);border-color:var(--mark);color:var(--on-mark);font-weight:700;margin-top:14px}
 .fullbtn:disabled{opacity:.55}
+#frame:fullscreen,#frame:-webkit-full-screen{width:100vw!important;height:100vh!important;background:#000;box-shadow:none}
+#frame:fullscreen canvas,#frame:-webkit-full-screen canvas{width:100%!important;height:100%!important;object-fit:contain}
+#frame:fullscreen .badge,#frame:fullscreen .wipebar,#frame:-webkit-full-screen .badge{display:none}
 #clipout{margin-top:14px;border:1px solid var(--line);padding:10px;background:var(--panel-2)}
 #clipmedia img,#clipmedia video{width:100%;display:block;background:#000}
 h4{font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin:22px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line)}
@@ -215,6 +218,7 @@ h4:first-child{margin-top:0}
         <button data-t="u">Adjust</button>
         <button data-t="d">Warp</button>
         <button data-t="v">Output</button>
+        <button data-t="a">Audio</button>
         <button data-t="c">Clip</button>
       </div>
 
@@ -311,8 +315,41 @@ h4:first-child{margin-top:0}
               <button data-v="stretch">Stretch</button>
             </div>
           </div>
+          <div class="row">
+            <div class="lab"><b>Tone</b></div>
+            <div class="seg" id="tone">
+              <button data-v="hard" class="on">1-bit</button>
+              <button data-v="soft">Soft</button>
+              <button data-v="grey">Grayscale</button>
+            </div>
+          </div>
           <label class="chk"><input type="checkbox" id="alpha" checked> Black as transparent (PNG alpha)</label>
-          <p class="note">With alpha, drop the layer into Resolume and run the mask through Alpha or Multiply. Without alpha, use Add or Screen.</p>
+          <p class="note">Grayscale keeps the full tonal range with no threshold, which is what you want if you plan to colourise it with a palette or gradient in Resolume. With alpha, drop the layer into Resolume and run the mask through Alpha or Multiply. Without alpha, use Add or Screen.</p>
+        </div>
+
+        <div class="pane" data-p="a">
+          <div class="row">
+            <div class="lab"><b>Source</b></div>
+            <div class="seg" id="ausrc">
+              <button data-v="none" class="on">Off</button>
+              <button data-v="mic">Mic</button>
+              <button data-v="file">Track</button>
+            </div>
+          </div>
+          <div id="aufile" hidden>
+            <button id="aupick" class="fullbtn">Load audio file</button>
+            <button id="auplay" class="fullbtn">Play / stop preview</button>
+          </div>
+          <p class="note" id="austat">Off.</p>
+          <h4>Reaction</h4>
+          <div class="row" data-a="sens"><div class="lab"><b>Beat sensitivity</b><span></span></div><input type="range" min="0" max="100" step="1"></div>
+          <label class="chk"><input type="checkbox" id="aubeat" checked> Change photo on beat</label>
+          <div class="row" data-a="pulse"><div class="lab"><b>Pulse (threshold + brightness)</b><span></span></div><input type="range" min="0" max="100" step="1"></div>
+          <div class="row" data-a="glitch"><div class="lab"><b>Glitch on highs</b><span></span></div><input type="range" min="0" max="100" step="1"></div>
+          <div class="row" data-a="bloom"><div class="lab"><b>Bloom on level</b><span></span></div><input type="range" min="0" max="100" step="1"></div>
+          <button id="aufull" class="fullbtn">Fullscreen live output</button>
+          <p class="note">Fullscreen gives a clean canvas with no UI, ready to be picked up by NDI Screen Capture, OBS or a virtual camera and sent into Resolume. Desktop only, iOS does not allow fullscreen for anything but video.</p>
+          <p class="note">Bloom needs Soft or Grayscale tone in the Output tab, it does nothing in 1-bit mode. On iPhone the mic only works in Safari, not in the home screen app.</p>
         </div>
 
         <div class="pane" data-p="c">
@@ -327,6 +364,7 @@ h4:first-child{margin-top:0}
               <button data-v="png">PNG seq</button>
             </div>
           </div>
+          <label class="chk"><input type="checkbox" id="ausync"> Sync to loaded track</label>
           <label class="chk"><input type="checkbox" id="shuffle"> Random order</label>
           <label class="chk"><input type="checkbox" id="rndinv"> Random RGB invert per frame</label>
           <button id="mkClip" class="fullbtn primary">Render clip</button>
@@ -352,14 +390,15 @@ h4:first-child{margin-top:0}
 
 <div id="err"><b>Error</b><i id="errmsg"></i><span onclick="this.parentNode.style.display='none'">×</span></div>
 <input type="file" id="file" accept="image/*" multiple hidden>
+<input type="file" id="afile" accept="audio/*" hidden>
 
 <script>
 "use strict";
 
 const D={channel:"luma",blur:1,detail:0,black:40,white:85,gamma:100,thr:50,soft:8,
-  invert:false,warp:14,wscale:26,wseed:7,res:"1920x1080",cw:1920,ch:1080,fit:"cover",alpha:true,mirror:"none",rgbinv:"none",orient:"land"};
+  invert:false,warp:14,wscale:26,wseed:7,res:"1920x1080",cw:1920,ch:1080,fit:"cover",alpha:true,mirror:"none",rgbinv:"none",orient:"land",tone:"hard"};
 
-const CLIP={fps:24,dur:4,hold:1,shuffle:false,fmt:"gif",rndinv:false};
+const CLIP={fps:24,dur:4,hold:1,shuffle:false,fmt:"gif",rndinv:false,audio:false};
 
 const PRESETS={
   "Asphalt":      {channel:"luma",blur:1,  detail:0, black:40,white:85,gamma:100,thr:52,soft:6, warp:12,wscale:26,invert:false,mirror:"none",rgbinv:"none"},
@@ -479,7 +518,13 @@ function outSize(it,s){
   return [W,H];
 }
 
-function render(it,s,W,H){
+/* render je rozdeleny na dve faze:
+   A = draho, zavisi len na fotke a geometrii, cachuje sa
+   B = lacno, prah/jas/bloom/glitch, bezi kazdy snimok pri audio reaktivite */
+function stageAKey(s,W,H){
+  return [W,H,s.fit,s.orient,s.mirror,s.rgbinv,s.channel,s.blur,s.detail,s.warp,s.wscale,s.wseed].join("|");
+}
+function stageA(it,s,W,H){
   const c=WORK,ctx=WCTX;
   if(c.width!==W) c.width=W;
   if(c.height!==H) c.height=H;
@@ -495,8 +540,7 @@ function render(it,s,W,H){
       ctx.drawImage(c,0,0,W,hh,0,0,W,hh); ctx.restore();
     }
   }
-  const id=ctx.getImageData(0,0,W,H), px=id.data, n=W*H;
-
+  const px=ctx.getImageData(0,0,W,H).data, n=W*H;
   const iv=s.rgbinv||"none";
   const ir=(iv==="r"||iv==="rgb"), ig2=(iv==="g"||iv==="rgb"), ib=(iv==="b"||iv==="rgb");
   let g=new Float32Array(n);
@@ -505,30 +549,17 @@ function render(it,s,W,H){
     if(ir) r=1-r;
     if(ig2) gg=1-gg;
     if(ib) b=1-b;
-    let v;
-    switch(s.channel){
-      case "r": v=r; break;
-      case "g": v=gg; break;
-      case "b": v=b; break;
-      case "max": v=Math.max(r,gg,b); break;
-      case "min": v=Math.min(r,gg,b); break;
-      case "sat": {const mx=Math.max(r,gg,b),mn=Math.min(r,gg,b); v=mx<=0?0:(mx-mn)/mx; break;}
-      default: v=0.2126*r+0.7152*gg+0.0722*b;
-    }
-    g[i]=v;
+    g[i]=chanVal(r,gg,b,s.channel);
   }
-
   const scale=Math.max(W,H)/1920;
   const br=Math.round(s.blur*scale);
   if(br>0){ const t=new Float32Array(n); boxBlur(g,t,W,H,br); g=t; }
-
   if(s.detail>0){
     const lo=new Float32Array(n);
     boxBlur(g,lo,W,H,Math.max(2,Math.round(14*scale)));
     const k=s.detail/100;
     for(let i=0;i<n;i++) g[i]=g[i]*(1-k)+(g[i]-lo[i]+0.5)*k;
   }
-
   if(s.warp>0){
     const src=g, dst=new Float32Array(n);
     const amp=s.warp*scale, f=1/(s.wscale*scale*4);
@@ -558,23 +589,74 @@ function render(it,s,W,H){
     }
     g=dst;
   }
-
+  return g;
+}
+function getGray(it,s,W,H){
+  const key=stageAKey(s,W,H);
+  if(it._ck===key&&it._cg&&it._cg.length===W*H) return it._cg;
+  const g=stageA(it,s,W,H);
+  it._ck=key; it._cg=g;
+  return g;
+}
+const NOMOD={thr:0,level:0,glitch:0,bloom:0,seed:1};
+function stageB(g,W,H,s,mod){
+  const m=mod||NOMOD, n=W*H;
+  const c=WORK,ctx=WCTX;
+  if(c.width!==W) c.width=W;
+  if(c.height!==H) c.height=H;
   const bl=s.black/100, wh=s.white/100, span=Math.max(0.001,wh-bl);
-  const gam=100/Math.max(1,s.gamma), thr=s.thr/100, soft=s.soft/100;
-  const inv=s.invert, useAlpha=s.alpha;
-  for(let i=0,j=0;i<n;i++,j+=4){
-    let v=(g[i]-bl)/span;
-    v=v<0?0:v>1?1:v;
-    if(gam!==1) v=Math.pow(v,gam);
-    if(soft<=0.005){ v=v>=thr?1:0; }
-    else { let t=(v-(thr-soft))/(2*soft); t=t<0?0:t>1?1:t; v=t*t*(3-2*t); }
-    if(inv) v=1-v;
-    const o=(v*255+0.5)|0;
-    px[j]=px[j+1]=px[j+2]=o;
-    px[j+3]=useAlpha?o:255;
+  const gam=100/Math.max(1,s.gamma);
+  const thr=clamp(s.thr/100+m.thr,0,1);
+  const soft=s.soft/100;
+  const gain=1+m.level;
+  const tone=s.tone||"hard";
+  const inv=s.invert, hard=tone==="hard", grey=tone==="grey";
+  const v=new Float32Array(n);
+  for(let i=0;i<n;i++){
+    let x=(g[i]-bl)/span*gain;
+    x=x<0?0:x>1?1:x;
+    if(gam!==1) x=Math.pow(x,gam);
+    if(!grey){
+      if(soft<=0.005){ x=x>=thr?1:0; }
+      else { let t=(x-(thr-soft))/(2*soft); t=t<0?0:t>1?1:t; x=t*t*(3-2*t); }
+    }
+    if(inv) x=1-x;
+    v[i]=x;
+  }
+  if(!hard&&m.bloom>0){   // bloom potrebuje medzitony, v 1-bit rezime nema co rozmazavat
+    const b=new Float32Array(n);
+    boxBlur(v,b,W,H,Math.max(2,Math.round(Math.max(W,H)*0.012)));
+    const k=m.bloom*2.2;
+    for(let i=0;i<n;i++){ const t=v[i]+k*b[i]; v[i]=t>1?1:t; }
+  }
+  const id=ctx.createImageData(W,H), px=id.data;
+  const useAlpha=s.alpha;
+  if(m.glitch>0.001){
+    const bands=Math.max(4,Math.round(H/28));
+    const bh=H/bands;
+    const off=new Int32Array(bands);
+    for(let b=0;b<bands;b++) off[b]=Math.round((hash2(b,7,m.seed)-0.5)*2*m.glitch*W*0.22);
+  for(let y=0;y<H;y++){
+      const o=off[Math.min(bands-1,(y/bh)|0)], row=y*W;
+      for(let x=0;x<W;x++){
+        let sx=x+o; sx%=W; if(sx<0) sx+=W;
+        const val=v[row+sx], j=(row+x)*4, q=(val*255+0.5)|0;
+        px[j]=px[j+1]=px[j+2]=q;
+        px[j+3]=useAlpha?q:255;
+      }
+    }
+  } else {
+    for(let i=0,j=0;i<n;i++,j+=4){
+      const q=(v[i]*255+0.5)|0;
+      px[j]=px[j+1]=px[j+2]=q;
+      px[j+3]=useAlpha?q:255;
+    }
   }
   ctx.putImageData(id,0,0);
   return c;
+}
+function render(it,s,W,H,mod){
+  return stageB(getGray(it,s,W,H),W,H,s,mod);
 }
 
 /* ---------- ui ---------- */
@@ -610,6 +692,7 @@ function syncPanel(){
   document.querySelectorAll("#mirror button").forEach(b=>b.classList.toggle("on",b.dataset.v===(s.mirror||"none")));
   document.querySelectorAll("#rgbinv button").forEach(b=>b.classList.toggle("on",b.dataset.v===(s.rgbinv||"none")));
   document.querySelectorAll("#orient button").forEach(b=>b.classList.toggle("on",b.dataset.v===(s.orient||"land")));
+  document.querySelectorAll("#tone button").forEach(b=>b.classList.toggle("on",b.dataset.v===(s.tone||"hard")));
   const os=outSize(items[cur],s);
   $("#ressize").textContent=os[0]+"×"+os[1];
 }
@@ -695,6 +778,7 @@ function buildStrip(){
 }
 function select(i){
   cur=i;
+  if(AU.running&&AMOD.onBeat){ /* rucny vyber prepise beat, loop pokracuje */ }
   document.querySelectorAll(".thumb").forEach((t,k)=>t.classList.toggle("on",k===i));
   const t=document.querySelectorAll(".thumb")[i];
   if(t&&t.scrollIntoView) t.scrollIntoView({block:"nearest",inline:"nearest"});
@@ -731,7 +815,10 @@ function fileToDataURL(file){
 }
 async function decodeFile(file){
   const errs=[];
-  if(self.createImageBitmap){ try{ return await createImageBitmap(file); }catch(e){ errs.push("bitmap"); } }
+  if(self.createImageBitmap){ try{ return await createImageBitmap(file,{imageOrientation:"from-image"}); }
+    catch(e){
+      try{ return await createImageBitmap(file); }catch(e2){ errs.push("bitmap"); }
+    } }
   try{ return await imgFrom(await fileToDataURL(file)); }catch(e){ errs.push("data"); }
   const u=URL.createObjectURL(file);
   try{ const im=await imgFrom(u); URL.revokeObjectURL(u); return im; }
@@ -883,19 +970,22 @@ function subBlocks(bytes){
   out.push(0);
   return new Uint8Array(out);
 }
-function canvasToIndices(c){
+function canvasToIndices(c,grey){
   const W=c.width,H=c.height;
   const d=c.getContext("2d").getImageData(0,0,W,H).data;
   const px=new Uint8Array(W*H);
-  for(let i=0,j=0;i<px.length;i++,j+=4) px[i]=d[j]>127?1:0;
+  if(grey){ for(let i=0,j=0;i<px.length;i++,j+=4) px[i]=d[j]; }
+  else    { for(let i=0,j=0;i<px.length;i++,j+=4) px[i]=d[j]>127?1:0; }
   return px;
 }
-function gifBytes(W,H,frames,transparent){
+function gifBytes(W,H,frames,transparent,grey){
   const parts=[];
   const head=[];
   "GIF89a".split("").forEach(ch=>head.push(ch.charCodeAt(0)));
-  head.push(W&255,(W>>8)&255,H&255,(H>>8)&255,0xF0,0,0);
-  head.push(0,0,0, 255,255,255);
+  // packed: GCT flag + rozlisenie + velkost tabulky (2^(N+1) poloziek)
+  head.push(W&255,(W>>8)&255,H&255,(H>>8)&255,grey?0xF7:0xF0,0,0);
+  if(grey){ for(let i=0;i<256;i++) head.push(i,i,i); }
+  else head.push(0,0,0, 255,255,255);
   head.push(0x21,0xFF,0x0B);
   "NETSCAPE2.0".split("").forEach(ch=>head.push(ch.charCodeAt(0)));
   head.push(0x03,0x01,0x00,0x00,0x00);
@@ -905,7 +995,7 @@ function gifBytes(W,H,frames,transparent){
     const disposal=transparent?2:1;
     g.push(0x21,0xF9,0x04,(disposal<<2)|(transparent?1:0),f.delay&255,(f.delay>>8)&255,0,0x00);
     g.push(0x2C,0,0,0,0,W&255,(W>>8)&255,H&255,(H>>8)&255,0x00);
-    g.push(2);
+    g.push(grey?8:2);
     parts.push(new Uint8Array(g));
     parts.push(f.data);
   }
@@ -923,11 +1013,271 @@ function frameDelays(total,fps){
   return d;
 }
 
+
+/* ---------- audio ---------- */
+const AU={
+  mode:"none", ctx:null, an:null, node:null, el:null, freq:null, prev:null,
+  bass:0, mid:0, high:0, level:0, hist:[], lastBeat:0, beatFlash:0,
+  running:false, feat:null, name:"", bpm:0, raf:0, fileBuf:null
+};
+const AMOD={sens:60, onBeat:true, pulse:50, glitch:35, bloom:40};
+
+function auStatus(t){ const el=$("#austat"); if(el) el.textContent=t; }
+
+function ensureCtx(){
+  if(AU.ctx) return AU.ctx;
+  const C=window.AudioContext||window.webkitAudioContext;
+  if(!C) throw new Error("no Web Audio here");
+  AU.ctx=new C();
+  return AU.ctx;
+}
+function makeAnalyser(){
+  const ctx=ensureCtx();
+  const an=ctx.createAnalyser();
+  an.fftSize=2048;                 // Safari historicky nepodporuje viac
+  an.smoothingTimeConstant=0.72;
+  AU.an=an;
+  AU.freq=new Uint8Array(an.frequencyBinCount);
+  AU.prev=new Float32Array(an.frequencyBinCount);
+  return an;
+}
+function bandAvg(from,to){
+  const bins=AU.freq.length, sr=AU.ctx.sampleRate, ny=sr/2;
+  const a=clamp(Math.floor(from/ny*bins),0,bins-1);
+  const b=clamp(Math.ceil(to/ny*bins),a+1,bins);
+  let s=0;
+  for(let i=a;i<b;i++) s+=AU.freq[i];
+  return s/(b-a)/255;
+}
+function auAnalyse(){
+  if(!AU.an) return;
+  AU.an.getByteFrequencyData(AU.freq);
+  AU.bass=bandAvg(20,160);
+  AU.mid=bandAvg(160,2000);
+  AU.high=bandAvg(4000,12000);
+  AU.level=bandAvg(20,12000);
+  let flux=0;
+  for(let i=0;i<AU.freq.length;i++){
+    const v=AU.freq[i]/255, d=v-AU.prev[i];
+    if(d>0) flux+=d;
+    AU.prev[i]=v;
+  }
+  flux/=AU.freq.length;
+  AU.hist.push(flux);
+  if(AU.hist.length>43) AU.hist.shift();
+  let mean=0;
+  for(const f of AU.hist) mean+=f;
+  mean/=AU.hist.length||1;
+  const sens=1.9-(AMOD.sens/100)*1.1;      // vyssia citlivost = nizsi prah
+  const now=performance.now();
+  if(flux>mean*sens+0.002&&now-AU.lastBeat>120){
+    AU.lastBeat=now;
+    AU.beatFlash=1;
+    return true;
+  }
+  AU.beatFlash*=0.86;
+  return false;
+}
+function auMod(){
+  const p=AMOD.pulse/100, g=AMOD.glitch/100, b=AMOD.bloom/100;
+  return {
+    thr: -p*(AU.bass*0.30+AU.beatFlash*0.12),
+    level: p*AU.level*0.45,
+    glitch: g*Math.max(0,AU.high-0.12)*1.6,
+    bloom: b*AU.level,
+    seed: 1+((performance.now()/60)|0)
+  };
+}
+function auLoop(){
+  if(!AU.running) return;
+  const beat=auAnalyse();
+  if(beat&&AMOD.onBeat&&items.length>1){
+    let nx=(cur+1)%items.length;
+    let guard=0;
+    while(items[nx]&&items[nx].bad&&guard++<items.length) nx=(nx+1)%items.length;
+    cur=nx;
+    document.querySelectorAll(".thumb").forEach((t,k)=>t.classList.toggle("on",k===cur));
+  }
+  if(cur>=0&&items[cur]&&!items[cur].bad){
+    try{
+      const it=items[cur], s=it.s;
+      const [W,H]=outSize(it,s);
+      const cap=MOBILE?420:640;
+      const k=Math.min(1,cap/Math.max(W,H));
+      const pw=Math.max(2,Math.round(W*k)), ph=Math.max(2,Math.round(H*k));
+      const c=render(it,s,pw,ph,auMod());
+      const out=$("#out");
+      if(out.width!==pw||out.height!==ph){ out.width=pw; out.height=ph; fitFrame(pw,ph); }
+      out.getContext("2d").clearRect(0,0,pw,ph);
+      out.getContext("2d").drawImage(c,0,0);
+    }catch(e){}
+  }
+  AU.raf=requestAnimationFrame(auLoop);
+}
+function auStop(){
+  AU.running=false;
+  if(AU.raf) cancelAnimationFrame(AU.raf);
+  if(AU.el){ try{ AU.el.pause(); }catch(e){} }
+  if(AU.stream){ AU.stream.getTracks().forEach(t=>t.stop()); AU.stream=null; }
+  if(AU.node){ try{ AU.node.disconnect(); }catch(e){} AU.node=null; }
+  preview();
+}
+async function auStartMic(){
+  auStop();
+  const standalone=navigator.standalone||matchMedia("(display-mode: standalone)").matches;
+  if(standalone&&IOS){
+    auStatus("iOS blocks the mic in home-screen apps. Open the site in Safari instead.");
+    return;
+  }
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+    auStatus("No microphone API in this browser.");
+    return;
+  }
+  try{
+    const ctx=ensureCtx();
+    if(ctx.state==="suspended") await ctx.resume();
+    const stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+    AU.stream=stream;
+    const an=makeAnalyser();
+    AU.node=ctx.createMediaStreamSource(stream);
+    AU.node.connect(an);
+    AU.mode="mic"; AU.running=true; AU.hist=[];
+    auStatus("Listening. Play something out loud.");
+    auLoop();
+  }catch(e){
+    auStatus("Mic refused: "+(e.message||e.name));
+  }
+}
+async function auPlayFile(){
+  if(!AU.el){ auStatus("Load a track first."); return; }
+  const ctx=ensureCtx();
+  if(ctx.state==="suspended") await ctx.resume();
+  if(!AU.node){
+    const an=makeAnalyser();
+    AU.node=ctx.createMediaElementSource(AU.el);
+    AU.node.connect(an);
+    an.connect(ctx.destination);
+  }
+  AU.mode="file"; AU.running=true; AU.hist=[];
+  AU.el.currentTime=0;
+  await AU.el.play();
+  auStatus("Playing "+AU.name);
+  auLoop();
+}
+// jeden prechod cez vzorky, tri jednopolove filtre, RMS do kosov po snimkoch
+function extractFeatures(buf,fps){
+  const sr=buf.sampleRate, N=buf.length, ch=buf.numberOfChannels;
+  let d;
+  if(ch===1) d=buf.getChannelData(0);
+  else{                                  // zmiesaj kanaly, inak ignorujeme polovicu stopy
+    d=new Float32Array(N);
+    for(let c=0;c<ch;c++){
+      const s=buf.getChannelData(c);
+      for(let i=0;i<N;i++) d[i]+=s[i]/ch;
+    }
+  }
+  const hop=Math.max(1,Math.round(sr/fps));
+  const nF=Math.max(1,Math.floor(N/hop));
+  const bass=new Float32Array(nF),mid=new Float32Array(nF),high=new Float32Array(nF),lev=new Float32Array(nF);
+  const a1=Math.exp(-2*Math.PI*150/sr), a2=Math.exp(-2*Math.PI*1500/sr), a3=Math.exp(-2*Math.PI*4000/sr);
+  let s1=0,s2=0,s3=0,ab=0,am=0,ah=0,al=0,cnt=0,f=0;
+  for(let i=0;i<N;i++){
+    const x=d[i];
+    s1=(1-a1)*x+a1*s1;
+    s2=(1-a2)*x+a2*s2;
+    s3=(1-a3)*x+a3*s3;
+    const b=s1, m=s2-s1, hg=x-s3;
+    ab+=b*b; am+=m*m; ah+=hg*hg; al+=x*x; cnt++;
+    if(cnt===hop){
+      if(f<nF){ bass[f]=Math.sqrt(ab/cnt); mid[f]=Math.sqrt(am/cnt); high[f]=Math.sqrt(ah/cnt); lev[f]=Math.sqrt(al/cnt); }
+      f++; ab=am=ah=al=0; cnt=0;
+      if(f>=nF) break;
+    }
+  }
+  const norm=arr=>{
+    const s=Array.prototype.slice.call(arr).sort((x,y)=>x-y);
+    const p=s[Math.floor(s.length*0.97)]||1;
+    for(let i=0;i<arr.length;i++) arr[i]=clamp(arr[i]/p,0,1);
+  };
+  norm(bass); norm(mid); norm(high); norm(lev);
+  const flux=new Float32Array(nF);
+  for(let i=1;i<nF;i++) flux[i]=Math.max(0,bass[i]-bass[i-1]);
+  const w=Math.max(2,Math.round(fps*0.4));
+  const onset=new Uint8Array(nF);
+  const gaps=[];
+  let last=-999;
+  const sens=1.9-(AMOD.sens/100)*1.1;
+  for(let i=1;i<nF;i++){
+    let m=0,c=0;
+    for(let j=Math.max(0,i-w);j<Math.min(nF,i+w);j++){ m+=flux[j]; c++; }
+    m/=c||1;
+    if(flux[i]>m*sens+0.004&&i-last>fps*0.12){
+      onset[i]=1;
+      if(last>0) gaps.push(i-last);
+      last=i;
+    }
+  }
+  let bpm=0;
+  if(gaps.length>3){
+    gaps.sort((a,b)=>a-b);
+    const med=gaps[gaps.length>>1];
+    if(med>0) bpm=Math.round(60/(med/fps));
+  }
+  return {fps,n:nF,bass,mid,high,level:lev,onset,bpm,dur:N/sr};
+}
+async function auLoadFile(file){
+  auStop();
+  AU.name=file.name;
+  auStatus("Decoding "+file.name+"...");
+  try{
+    const ab=await file.arrayBuffer();
+    AU.fileBuf=ab;
+    const OC=window.OfflineAudioContext||window.webkitOfflineAudioContext;
+    const octx=new OC(1,2,22050);   // dekoduje a rovno prevzorkuje dole
+    let buf;
+    try{ buf=await octx.decodeAudioData(ab.slice(0)); }
+    catch(e){ buf=await new Promise((res,rej)=>octx.decodeAudioData(ab.slice(0),res,rej)); }
+    AU.feat=extractFeatures(buf,CLIP.fps);
+    if(AU.el){ try{ AU.el.pause(); }catch(e){} }
+    AU.el=new Audio();
+    try{ AU.el.src=URL.createObjectURL(file); }
+    catch(e){ AU.el.src=await fileToDataURL(file); }
+    AU.el.onerror=async()=>{ try{ AU.el.src=await fileToDataURL(file); }catch(e){} };
+    AU.el.loop=false;
+    AU.node=null;
+    const f=AU.feat;
+    auStatus(`${file.name} - ${f.dur.toFixed(0)}s${f.bpm?" - ~"+f.bpm+" BPM":""}`);
+    updateClipInfo();
+  }catch(e){
+    auStatus("Could not decode this file. Try MP3, M4A or WAV.");
+    AU.feat=null;
+  }
+}
+function featMod(i){
+  const f=AU.feat;
+  if(!f) return NOMOD;
+  const k=i%f.n;
+  const p=AMOD.pulse/100, g=AMOD.glitch/100, b=AMOD.bloom/100;
+  return {
+    thr: -p*(f.bass[k]*0.30+(f.onset[k]?0.12:0)),
+    level: p*f.level[k]*0.45,
+    glitch: g*Math.max(0,f.high[k]-0.12)*1.6,
+    bloom: b*f.level[k],
+    seed: 1+k
+  };
+}
+
 /* ---------- clip ---------- */
 function clipSize(count){
   const it=items[cur>=0?cur:items.findIndex(i=>!i.bad)];
   let [W,H]=outSize(it,it.s);
-  const budget=MOBILE?26e6:90e6;
+  if(CLIP.audio&&AU.feat){
+    const capPx=MOBILE?0.45e6:1.2e6;
+    if(W*H>capPx){ const k=Math.sqrt(capPx/(W*H)); W=Math.round(W*k); H=Math.round(H*k); }
+    W-=W%2; H-=H%2;
+    return [W,H];
+  }
+  const budget=MOBILE?9e6:50e6;   // 9M px = ~36 MB platien, viac iOS tab neunesie
   const need=W*H*Math.max(1,count);
   if(need>budget){
     const k=Math.sqrt(budget/need);
@@ -963,17 +1313,20 @@ function updateClipInfo(){
   const n=items.filter(i=>!i.bad).length;
   if(!n){ el.textContent=""; return; }
   const total=Math.max(1,Math.round(CLIP.fps*CLIP.dur));
+  if(CLIP.audio&&AU.feat){
+    let beats=0;
+    for(let i=0;i<Math.min(total,AU.feat.n);i++) beats+=AU.feat.onset[i];
+    el.textContent=`${n} photo${n===1?"":"s"} - ${total} frames - ${beats} beats in this window${AU.feat.bpm?" - ~"+AU.feat.bpm+" BPM":""}`;
+    return;
+  }
   const cycles=(total/(n*CLIP.hold)).toFixed(1);
   el.textContent=`${n} photo${n===1?"":"s"} - ${total} frames - sequence repeats ${cycles}x`;
 }
-async function seqZip(frames,seq){
-  const cache=new Map(), files=[];
-  for(let i=0;i<seq.length;i++){
-    const k=seq[i];
-    if(!cache.has(k)) cache.set(k,new Uint8Array(await (await canvasBlob(frames[k])).arrayBuffer()));
-    files.push({name:"frame_"+String(i+1).padStart(4,"0")+".png",data:cache.get(k)});
-  }
-  await save(zip(files),"texture_sequence.zip");
+const tick=()=>new Promise(r=>setTimeout(r,0));
+function freeFrames(list,frames){
+  for(const f of frames){ try{ f.width=0; f.height=0; }catch(e){} }
+  frames.length=0;
+  for(const it of list){ it._cg=null; it._ck=null; }   // uvolni cache stupna A
 }
 async function renderClip(){
   const list=items.filter(i=>!i.bad);
@@ -981,57 +1334,111 @@ async function renderClip(){
   const btn=$("#mkClip"), info=$("#clipinfo");
   btn.disabled=true;
   $("#clipout").hidden=true;
-  let frames=[];
+  const frames=[];
   try{
-    const VAR = CLIP.rndinv ? ["none","r","g","b"] : ["none"];
+    if(CLIP.audio&&!AU.feat) throw new Error("load and analyse a track first");
+    const audio=!!(CLIP.audio&&AU.feat);
+    if(audio&&AU.feat.fps!==CLIP.fps) throw new Error("fps changed since the track was analysed, load it again");
+    const total=Math.max(1,Math.round(CLIP.fps*CLIP.dur));
+    const VAR=CLIP.rndinv?["none","r","g","b"]:["none"];
     const V=VAR.length;
     const [W,H]=clipSize(list.length*V);
-    for(let i=0;i<list.length;i++){
-      for(let v=0;v<V;v++){
-        info.textContent=`Preparing frame ${i*V+v+1}/${list.length*V}...`;
-        await new Promise(r=>setTimeout(r,0));
-        const s=Object.assign({},list[i].s,{alpha:false});
-        if(V>1) s.rgbinv=VAR[v];
-        frames.push(copyCanvas(render(list[i],s,W,H)));
-      }
-    }
-    const total=Math.max(1,Math.round(CLIP.fps*CLIP.dur));
-    const photoSeq=buildSequence(list.length,total,CLIP.hold,CLIP.shuffle);
-    const seq=new Array(total);
-    let lastP=-1,vv=0;
-    for(let i=0;i<total;i++){
-      if(photoSeq[i]!==lastP){ vv=V>1?(Math.random()*V|0):0; lastP=photoSeq[i]; }
-      seq[i]=photoSeq[i]*V+vv;
-    }
+    const grey=list.some(it=>(it.s.tone||"hard")!=="hard");
+    const minCode=grey?8:2;
+    const transparent=(cur>=0&&items[cur])?!!items[cur].s.alpha:true;
 
-    if(CLIP.fmt==="png"){
-      info.textContent="Packing PNG sequence...";
-      await seqZip(frames,seq);
-      info.textContent=`${W}x${H} - ${total} PNG frames`;
-    } else if(CLIP.fmt==="gif"){
-      const cache=new Map();
-      const delays=frameDelays(total,CLIP.fps);
-      const gframes=[];
+    // poradie fotiek
+    let seq;
+    if(audio){
+      const order=list.map((_,i)=>i);
+      if(CLIP.shuffle) for(let i=order.length-1;i>0;i--){ const j=Math.random()*(i+1)|0; const t=order[i]; order[i]=order[j]; order[j]=t; }
+      let p=0;
+      seq=new Array(total);
       for(let i=0;i<total;i++){
-        const k=seq[i];
-        if(!cache.has(k)){
-          btn.textContent=`Encoding ${Math.round((cache.size+1)/frames.length*100)}%`;
-          await new Promise(r=>setTimeout(r,0));
-          cache.set(k,subBlocks(lzwEncode(2,canvasToIndices(frames[k]))));
-        }
-        gframes.push({data:cache.get(k),delay:delays[i]});
+        if(i>0&&AU.feat.onset[i%AU.feat.n]&&AMOD.onBeat) p++;
+        seq[i]=order[p%order.length];
       }
-      const transparent=(cur>=0&&items[cur])?!!items[cur].s.alpha:true;
-      const blob=gifBytes(W,H,gframes,transparent);
-      info.textContent=`${W}x${H} - ${total} frames - ${(blob.size/1048576).toFixed(1)} MB GIF`;
+    } else {
+      const photoSeq=buildSequence(list.length,total,CLIP.hold,CLIP.shuffle);
+      seq=new Array(total);
+      let lastP=-1,vv=0;
+      for(let i=0;i<total;i++){
+        if(photoSeq[i]!==lastP){ vv=V>1?(Math.random()*V|0):0; lastP=photoSeq[i]; }
+        seq[i]=photoSeq[i]*V+vv;
+      }
+      // bez zvuku je unikatnych snimkov len tolko co fotiek, tie sa daju predpocitat
+      for(let i=0;i<list.length;i++){
+        for(let v=0;v<V;v++){
+          info.textContent=`Preparing frame ${i*V+v+1}/${list.length*V}...`;
+          await tick();
+          const s=Object.assign({},list[i].s,{alpha:false});
+          if(V>1) s.rgbinv=VAR[v];
+          frames.push(copyCanvas(render(list[i],s,W,H)));
+        }
+      }
+    }
+    // pri zvuku je kazdy snimok iny, drzat 100 platien v pamati by telefon nezvladol,
+    // preto sa renderuje az v momente spotreby
+    const renderAt=i=>{
+      const it=list[seq[i]];
+      const s=Object.assign({},it.s,{alpha:false});
+      return render(it,s,W,H,featMod(i));
+    };
+
+    if(CLIP.fmt==="gif"){
+      const delays=frameDelays(total,CLIP.fps);
+      const gframes=[], cache=new Map();
+      for(let i=0;i<total;i++){
+        if(i%4===0){ btn.textContent=`Encoding ${Math.round((i+1)/total*100)}%`; await tick(); }
+        let data;
+        if(audio) data=subBlocks(lzwEncode(minCode,canvasToIndices(renderAt(i),grey)));
+        else{
+          const k=seq[i];
+          if(!cache.has(k)) cache.set(k,subBlocks(lzwEncode(minCode,canvasToIndices(frames[k],grey))));
+          data=cache.get(k);
+        }
+        gframes.push({data,delay:delays[i]});
+      }
+      const blob=gifBytes(W,H,gframes,transparent,grey);
+      info.textContent=`${W}x${H} - ${total} frames - ${(blob.size/1048576).toFixed(1)} MB GIF${grey?" (grayscale)":""}`;
       showClip(blob,"texture_loop.gif","img");
+
+    } else if(CLIP.fmt==="png"){
+      const files=[], cache=new Map();
+      for(let i=0;i<total;i++){
+        if(i%4===0){ btn.textContent=`Packing ${Math.round((i+1)/total*100)}%`; await tick(); }
+        let data;
+        if(audio) data=new Uint8Array(await (await canvasBlob(renderAt(i))).arrayBuffer());
+        else{
+          const k=seq[i];
+          if(!cache.has(k)) cache.set(k,new Uint8Array(await (await canvasBlob(frames[k])).arrayBuffer()));
+          data=cache.get(k);
+        }
+        files.push({name:"frame_"+String(i+1).padStart(4,"0")+".png",data});
+      }
+      await save(zip(files),"texture_sequence.zip");
+      info.textContent=`${W}x${H} - ${total} PNG frames`;
+
     } else {
       const mime=pickMime();
-      if(mime===null) throw new Error("this browser has no video recorder, use GIF");
+      if(mime===null) throw new Error("no video recorder in this browser, use GIF");
+      // pri zvuku sa snimky odlozia ako PNG blob a dekoduju sa az tesne pred zapisom
+      let blobs=null;
+      if(audio){
+        blobs=[];
+        for(let i=0;i<total;i++){
+          if(i%4===0){ btn.textContent=`Preparing ${Math.round((i+1)/total*100)}%`; await tick(); }
+          blobs.push(await canvasBlob(renderAt(i)));
+        }
+      }
       const cv=document.createElement("canvas");
       cv.width=W; cv.height=H;
       const cx=cv.getContext("2d");
-      cx.drawImage(frames[seq[0]],0,0);
+      const q=new Array(total);
+      const LOOK=10;
+      const ensure=i=>{ for(let k=i;k<Math.min(total,i+LOOK);k++) if(blobs&&!q[k]) q[k]=createImageBitmap(blobs[k]); };
+      const frameAt=async i=>{ if(!blobs) return frames[seq[i]]; ensure(i); const bm=await q[i]; q[i]=null; return bm; };
+      cx.drawImage(await frameAt(0),0,0);
       let stream=null,track=null,manual=false;
       try{ stream=cv.captureStream(0); track=stream.getVideoTracks()[0]; manual=!!(track&&typeof track.requestFrame==="function"); }catch(e){ stream=null; }
       if(!manual) stream=cv.captureStream(CLIP.fps);
@@ -1045,10 +1452,12 @@ async function renderClip(){
       const out=$("#out"), octx=out.getContext("2d");
       const t0=performance.now();
       for(let i=0;i<total;i++){
+        const img=await frameAt(i);
         const target=t0+i*1000/CLIP.fps;
         const now=performance.now();
         if(target>now) await new Promise(r=>setTimeout(r,target-now));
-        cx.drawImage(frames[seq[i]],0,0);
+        cx.drawImage(img,0,0);
+        if(img.close) img.close();
         if(manual) track.requestFrame();
         if(i%2===0){
           octx.drawImage(cv,0,0,out.width,out.height);
@@ -1059,6 +1468,7 @@ async function renderClip(){
       rec.stop();
       await stopped;
       if(stream.getTracks) stream.getTracks().forEach(t=>t.stop());
+      cv.width=0; cv.height=0;
       const blob=new Blob(chunks,{type:mime||"video/webm"});
       if(!blob.size) throw new Error("recorder returned nothing");
       const ext=(mime||"").indexOf("mp4")>=0?"mp4":"webm";
@@ -1070,7 +1480,7 @@ async function renderClip(){
     fail("clip: "+e.message);
     info.textContent="Clip failed, see the message at the bottom.";
   }
-  frames.length=0;
+  freeFrames(list,frames);
   btn.disabled=false; btn.textContent="Render clip";
   preview();
 }
@@ -1166,9 +1576,49 @@ document.querySelectorAll(".row[data-c] input").forEach(inp=>{
   const lab=inp.closest(".row").querySelector(".lab span");
   const show=()=>{ lab.textContent = k==="dur" ? CLIP[k]+" s" : k==="fps" ? CLIP[k]+" fps" : CLIP[k]+"x"; };
   show();
-  inp.addEventListener("input",()=>{ CLIP[k]=+inp.value; show(); updateClipInfo(); });
+  inp.addEventListener("input",()=>{
+    CLIP[k]=+inp.value; show();
+    if(k==="fps"&&AU.feat&&AU.feat.fps!==CLIP.fps) auStatus("fps changed, reload the track to re-analyse.");
+    updateClipInfo();
+  });
 });
 $("#shuffle").onchange=e=>{ CLIP.shuffle=e.target.checked; };
+$("#ausync").onchange=e=>{ CLIP.audio=e.target.checked; updateClipInfo(); };
+$("#aubeat").onchange=e=>{ AMOD.onBeat=e.target.checked; };
+document.querySelectorAll("#tone button").forEach(b=>b.onclick=()=>{
+  if(cur<0) return;
+  setParam("tone",b.dataset.v);
+  document.querySelectorAll("#tone button").forEach(x=>x.classList.toggle("on",x===b));
+  schedule();
+});
+document.querySelectorAll(".row[data-a] input").forEach(inp=>{
+  const k=inp.closest(".row").dataset.a;
+  inp.value=AMOD[k];
+  const lab=inp.closest(".row").querySelector(".lab span");
+  const show=()=>{ lab.textContent=AMOD[k]+" %"; };
+  show();
+  inp.addEventListener("input",()=>{ AMOD[k]=+inp.value; show(); });
+});
+document.querySelectorAll("#ausrc button").forEach(b=>b.onclick=async()=>{
+  document.querySelectorAll("#ausrc button").forEach(x=>x.classList.toggle("on",x===b));
+  const v=b.dataset.v;
+  $("#aufile").hidden = v!=="file";
+  if(v==="none"){ AU.mode="none"; auStop(); auStatus("Off."); }
+  else if(v==="mic"){ await auStartMic(); }
+  else { AU.mode="file"; auStop(); auStatus(AU.feat?("Loaded "+AU.name):"Load a track."); }
+});
+$("#aufull").onclick=()=>{
+  const f=$("#frame");
+  const go=f.requestFullscreen||f.webkitRequestFullscreen;
+  if(!go){ auStatus("Fullscreen is not available in this browser."); return; }
+  try{ go.call(f); }catch(e){ auStatus("Fullscreen refused: "+e.message); }
+};
+$("#aupick").onclick=()=>$("#afile").click();
+$("#afile").onchange=e=>{ if(e.target.files[0]) auLoadFile(e.target.files[0]); e.target.value=""; };
+$("#auplay").onclick=()=>{
+  if(AU.running) auStop();
+  else auPlayFile();
+};
 $("#rndinv").onchange=e=>{ CLIP.rndinv=e.target.checked; };
 document.querySelectorAll("#clipfmt button").forEach(b=>b.onclick=()=>{
   CLIP.fmt=b.dataset.v;
